@@ -156,7 +156,7 @@ func TestAdapter_MentionBot(t *testing.T) {
 	p := model.Post{
 		Id:        "0",
 		ChannelId: dummyRoom.Id,
-		Message:   fmt.Sprintf("%s do stuff", a.userLink(a.user.Username)),
+		Message:   fmt.Sprintf("hey %s do stuff", a.userLink(a.user.Username)),
 		UserId:    dummyUser.Id,
 	}
 
@@ -176,7 +176,7 @@ func TestAdapter_MentionBot(t *testing.T) {
 
 	events := brain.RecordedEvents()
 	require.NotEmpty(t, events)
-	expectedEvt := joe.ReceiveMessageEvent{Text: "do stuff", Channel: dummyRoom.Id, AuthorID: dummyUser.Id, Data: &p, ID: "0"}
+	expectedEvt := joe.ReceiveMessageEvent{Text: p.Message, Channel: dummyRoom.Id, AuthorID: dummyUser.Id, Data: &p, ID: "0"}
 	assert.Equal(t, expectedEvt, events[0])
 }
 

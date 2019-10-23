@@ -168,7 +168,7 @@ func (a *BotAdapter) handleMessageEvent(msg *model.WebSocketEvent, brain *joe.Br
 	direct := channel.Type == model.CHANNEL_DIRECT
 	// check if we have a DM, or standard channel post
 	selfLink := a.userLink(a.user.Username)
-	if !direct && !strings.HasPrefix(post.Message, selfLink) {
+	if !direct && !strings.Contains(post.Message, selfLink) {
 		// Message isn't for us, exiting
 		return
 	}
