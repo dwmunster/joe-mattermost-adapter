@@ -90,7 +90,7 @@ func newConf(loginID, password, serverURL string, joeConf *joe.Config, opts []Op
 }
 
 // NewAdapter creates a new *BotAdapter that connects to mattermost. Note that you
-// will usually configure the slack adapter as joe.Module (i.e. using the
+// will usually configure the mattermost adapter as joe.Module (i.e. using the
 // Adapter function of this package).
 func NewAdapter(ctx context.Context, conf Config) (*BotAdapter, error) {
 

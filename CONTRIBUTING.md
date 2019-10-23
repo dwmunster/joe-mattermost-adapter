@@ -90,7 +90,7 @@ where participants feel welcome and safe.
 This Code of Conduct is adapted from the [Contributor Covenant][homepage], version 1.4,
 available at [http://contributor-covenant.org/version/1/4][version]
 
-[issues]: https://github.com/go-joe/slack-adapter/issues
+[issues]: https://github.com/dwmunster/go-joe-mattermost/issues
 [talk-code]: https://dave.cheney.net/2019/02/18/talk-then-code
 [homepage]: http://contributor-covenant.org
 [version]: http://contributor-covenant.org/version/1/4/
