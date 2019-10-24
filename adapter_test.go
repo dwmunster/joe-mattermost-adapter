@@ -59,8 +59,8 @@ func newTestAdapter(t *testing.T) (*BotAdapter, *mockMM) {
 		Team:   dummyTeam.Name,
 	}
 
-	client.On("GetMe", "").Return(botUser, nil)
-	client.On("GetTeamByName", dummyTeam.Name, "").Return(&dummyTeam, nil)
+	client.On("GetMe", "").Return(botUser, &model.Response{})
+	client.On("GetTeamByName", dummyTeam.Name, "").Return(&dummyTeam, &model.Response{})
 	u, _ := url.Parse("https://nowhere")
 	conf.ServerURL = u
 
@@ -75,7 +75,7 @@ func TestAdapter_IgnoreNormalMessages(t *testing.T) {
 	brain := joetest.NewBrain(t)
 	a, api := newTestAdapter(t)
 	api.On("EventStream").Return(api.evts)
-	api.On("GetChannel", dummyRoom.Id, "").Return(&dummyRoom, nil)
+	api.On("GetChannel", dummyRoom.Id, "").Return(&dummyRoom, &model.Response{})
 
 	done := make(chan bool)
 	go func() {
@@ -111,7 +111,7 @@ func TestAdapter_DirectMessages(t *testing.T) {
 	brain := joetest.NewBrain(t)
 	a, api := newTestAdapter(t)
 	api.On("EventStream").Return(api.evts)
-	api.On("GetChannel", dummyDM.Id, "").Return(&dummyDM, nil)
+	api.On("GetChannel", dummyDM.Id, "").Return(&dummyDM, &model.Response{})
 
 	done := make(chan bool)
 	go func() {
@@ -150,7 +150,7 @@ func TestAdapter_MentionBot(t *testing.T) {
 	brain := joetest.NewBrain(t)
 	a, api := newTestAdapter(t)
 	api.On("EventStream").Return(api.evts)
-	api.On("GetChannel", dummyRoom.Id, "").Return(&dummyRoom, nil)
+	api.On("GetChannel", dummyRoom.Id, "").Return(&dummyRoom, &model.Response{})
 
 	done := make(chan bool)
 	go func() {
@@ -189,7 +189,7 @@ func TestAdapter_MentionBotPrefix(t *testing.T) {
 	brain := joetest.NewBrain(t)
 	a, api := newTestAdapter(t)
 	api.On("EventStream").Return(api.evts)
-	api.On("GetChannel", dummyRoom.Id, "").Return(&dummyRoom, nil)
+	api.On("GetChannel", dummyRoom.Id, "").Return(&dummyRoom, &model.Response{})
 
 	done := make(chan bool)
 	go func() {
@@ -226,13 +226,13 @@ func TestAdapter_MentionBotPrefix(t *testing.T) {
 
 func TestAdapter_Send(t *testing.T) {
 	a, api := newTestAdapter(t)
-	api.On("GetChannelByName", dummyRoom.Name, dummyTeam.Id, "").Return(&dummyRoom, nil)
+	api.On("GetChannelByName", dummyRoom.Name, dummyTeam.Id, "").Return(&dummyRoom, &model.Response{})
 
 	p := &model.Post{
 		ChannelId: dummyRoom.Id,
 		Message:   "Hello World",
 	}
-	api.On("CreatePost", p).Return(&model.Post{}, nil)
+	api.On("CreatePost", p).Return(&model.Post{}, &model.Response{})
 
 	err := a.Send("Hello World", dummyRoom.Name)
 	require.NoError(t, err)

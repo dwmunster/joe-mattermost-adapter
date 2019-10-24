@@ -116,9 +116,9 @@ func NewAdapter(ctx context.Context, conf Config) (*BotAdapter, error) {
 }
 
 func newAdapter(ctx context.Context, client mattermostAPI, conf Config) (*BotAdapter, error) {
-	user, appErr := client.GetMe("")
-	if appErr != nil && appErr.Error != nil {
-		return nil, errors.Wrapf(appErr.Error, "error getting self")
+	user, response := client.GetMe("")
+	if response.Error != nil {
+		return nil, errors.Wrapf(response.Error, "error getting self")
 	}
 
 	a := &BotAdapter{
@@ -130,12 +130,12 @@ func newAdapter(ctx context.Context, client mattermostAPI, conf Config) (*BotAda
 		roomNamesFromIDs: make(map[string]string),
 	}
 
-	if team, err := client.GetTeamByName(conf.Team, ""); err != nil {
+	if team, response := client.GetTeamByName(conf.Team, ""); response.Error != nil {
 		a.logger.Error("unable to find team, are you sure the bot is a member?",
 			zap.String("team", conf.Team),
-			zap.Error(err.Error),
+			zap.Error(response.Error),
 		)
-		return nil, err.Error
+		return nil, errors.Wrapf(response.Error, "unable to find team '%s', are you sure the bot is a member?", conf.Team)
 	} else {
 		a.team = team
 	}
@@ -225,7 +225,7 @@ func (a *BotAdapter) roomsByID(rid string) *model.Channel {
 	a.roomsMu.Lock()
 	defer a.roomsMu.Unlock()
 	ch, resp := a.api.GetChannel(rid, "")
-	if resp != nil {
+	if resp.Error != nil {
 		a.logger.Error("Received error from GetChannel",
 			zap.String("rid", rid),
 			zap.Error(resp.Error),
@@ -256,7 +256,7 @@ func (a *BotAdapter) roomsByName(name string) *model.Channel {
 	}
 
 	ch, resp := a.api.GetChannelByName(name, a.team.Id, "")
-	if resp != nil {
+	if resp.Error != nil {
 		a.logger.Error("Received error from GetChannelByName",
 			zap.String("name", name),
 			zap.Error(resp.Error),
@@ -286,7 +286,7 @@ func (a *BotAdapter) Send(text, channelName string) error {
 		// do not leak actual message content since it might be sensitive
 	)
 	_, resp := a.api.CreatePost(p)
-	if resp != nil {
+	if resp.Error != nil {
 		a.logger.Error("unable to create post", zap.Error(resp.Error))
 		return errors.Wrap(resp.Error, "unable to create post")
 	}
