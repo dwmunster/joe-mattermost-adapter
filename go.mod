@@ -3,7 +3,6 @@ module github.com/dwmunster/go-joe-mattermost
 go 1.13
 
 require (
-	github.com/RocketChat/Rocket.Chat.Go.SDK v0.0.0-20190830172144-a0029dee631d
 	github.com/go-joe/joe v0.9.0
 	github.com/go-redis/redis v6.15.6+incompatible // indirect
 	github.com/gorilla/websocket v1.4.1 // indirect

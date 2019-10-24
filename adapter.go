@@ -25,17 +25,20 @@ type BotAdapter struct {
 	context context.Context
 	logger  *zap.Logger
 	user    *model.User
+	team    *model.Team
 
 	api mattermostAPI
 
-	rooms   map[string]*model.Channel
-	roomsMu sync.RWMutex
+	rooms            map[string]*model.Channel
+	roomsMu          sync.RWMutex
+	roomNamesFromIDs map[string]string
 }
 
 // Config contains the configuration of a BotAdapter.
 type Config struct {
 	LoginID   string
 	Password  string
+	Team      string
 	ServerURL *url.URL
 	Name      string
 	Logger    *zap.Logger
@@ -46,14 +49,16 @@ type mattermostAPI interface {
 	//SaveReaction(reaction *model.Reaction) (*model.Reaction, *model.Response)
 	Login(loginId string, password string) (*model.User, *model.Response)
 	EventStream() chan *model.WebSocketEvent
+	GetChannelByName(channelName, teamId string, etag string) (*model.Channel, *model.Response)
 	GetChannel(channelId, etag string) (*model.Channel, *model.Response)
+	GetTeamByName(name, etag string) (*model.Team, *model.Response)
 	Close() error
 }
 
 //Adapter returns a new mattermost Adapter as joe.Module.
-func Adapter(loginID, password, serverURL string, opts ...Option) joe.Module {
+func Adapter(loginID, password, serverURL, teamName string, opts ...Option) joe.Module {
 	return joe.ModuleFunc(func(joeConf *joe.Config) error {
-		conf, err := newConf(loginID, password, serverURL, joeConf, opts)
+		conf, err := newConf(loginID, password, serverURL, teamName, joeConf, opts)
 		if err != nil {
 			return err
 		}
@@ -68,12 +73,12 @@ func Adapter(loginID, password, serverURL string, opts ...Option) joe.Module {
 	})
 }
 
-func newConf(loginID, password, serverURL string, joeConf *joe.Config, opts []Option) (Config, error) {
+func newConf(loginID, password, serverURL, teamName string, joeConf *joe.Config, opts []Option) (Config, error) {
 	u, err := url.Parse(serverURL)
 	if err != nil {
 		return Config{}, err
 	}
-	conf := Config{LoginID: loginID, Password: password, ServerURL: u, Name: joeConf.Name}
+	conf := Config{LoginID: loginID, Password: password, ServerURL: u, Name: joeConf.Name, Team: teamName}
 
 	for _, opt := range opts {
 		err := opt(&conf)
@@ -109,11 +114,22 @@ func newAdapter(ctx context.Context, client mattermostAPI, conf Config) (*BotAda
 	}
 
 	a := &BotAdapter{
-		context: ctx,
-		logger:  conf.Logger,
-		user:    user,
-		api:     client,
-		rooms:   make(map[string]*model.Channel),
+		context:          ctx,
+		logger:           conf.Logger,
+		user:             user,
+		api:              client,
+		rooms:            make(map[string]*model.Channel),
+		roomNamesFromIDs: make(map[string]string),
+	}
+
+	if team, err := client.GetTeamByName(conf.Team, ""); err != nil {
+		a.logger.Error("unable to find team, are you sure the bot is a member?",
+			zap.String("team", conf.Team),
+			zap.Error(err.Error),
+		)
+		return nil, err.Error
+	} else {
+		a.team = team
 	}
 
 	if a.logger == nil {
@@ -124,6 +140,7 @@ func newAdapter(ctx context.Context, client mattermostAPI, conf Config) (*BotAda
 		zap.String("url", conf.ServerURL.String()),
 		zap.String("username", a.user.Username),
 		zap.String("id", a.user.Id),
+		zap.String("team", a.team.Name),
 	)
 	return a, nil
 }
@@ -161,6 +178,12 @@ func (a *BotAdapter) handleMessageEvent(msg *model.WebSocketEvent, brain *joe.Br
 		a.logger.Error("Unable to parse post", zap.String("data", msg.Data["post"].(string)))
 		return
 	}
+
+	// Short-circuit for our own messages
+	if post.UserId == a.user.Id {
+		return
+	}
+
 	channel := a.roomsByID(post.ChannelId)
 	if channel == nil {
 		return
@@ -172,11 +195,11 @@ func (a *BotAdapter) handleMessageEvent(msg *model.WebSocketEvent, brain *joe.Br
 		// Message isn't for us, exiting
 		return
 	}
-	rid := channel.Id
+
 	text := strings.TrimSpace(strings.TrimPrefix(post.Message, selfLink))
 	brain.Emit(joe.ReceiveMessageEvent{
 		Text:     text,
-		Channel:  rid,
+		Channel:  channel.Name,
 		AuthorID: post.UserId,
 		Data:     post,
 		ID:       post.Id,
@@ -185,7 +208,31 @@ func (a *BotAdapter) handleMessageEvent(msg *model.WebSocketEvent, brain *joe.Br
 
 func (a *BotAdapter) roomsByID(rid string) *model.Channel {
 	a.roomsMu.RLock()
-	room, ok := a.rooms[rid]
+	roomName, ok := a.roomNamesFromIDs[rid]
+	a.roomsMu.RUnlock()
+	if ok {
+		return a.roomsByName(roomName)
+	}
+
+	a.roomsMu.Lock()
+	defer a.roomsMu.Unlock()
+	ch, resp := a.api.GetChannel(rid, "")
+	if resp != nil {
+		a.logger.Error("Received error from GetChannel",
+			zap.String("rid", rid),
+			zap.Error(resp.Error),
+		)
+		return nil
+	}
+	a.rooms[ch.Name] = ch
+	a.roomNamesFromIDs[rid] = ch.Name
+	return ch
+
+}
+
+func (a *BotAdapter) roomsByName(name string) *model.Channel {
+	a.roomsMu.RLock()
+	room, ok := a.rooms[name]
 	a.roomsMu.RUnlock()
 	if ok {
 		return room
@@ -195,38 +242,39 @@ func (a *BotAdapter) roomsByID(rid string) *model.Channel {
 
 	// It's possible the room was filled in by another thread while waiting
 	// for write lock.
-	room, ok = a.rooms[rid]
+	room, ok = a.rooms[name]
 	if ok {
 		return room
 	}
 
-	ch, resp := a.api.GetChannel(rid, "")
+	ch, resp := a.api.GetChannelByName(name, a.team.Id, "")
 	if resp != nil {
-		a.logger.Error("Received error from GetChannel",
-			zap.String("rid", rid),
+		a.logger.Error("Received error from GetChannelByName",
+			zap.String("name", name),
 			zap.Error(resp.Error),
 		)
 		return nil
 	}
+	a.rooms[name] = ch
 	return ch
 }
 
 // Send implements joe.Adapter by sending all received text messages to the
-// given mattermost channel ID.
-func (a *BotAdapter) Send(text, channelID string) error {
+// given mattermost channel name.
+func (a *BotAdapter) Send(text, channelName string) error {
 
-	room := a.roomsByID(channelID)
+	room := a.roomsByName(channelName)
 	if room == nil {
 		a.logger.Error("Could not send message, channel not found",
-			zap.String("channelID", channelID),
+			zap.String("channelName", channelName),
 		)
-		return fmt.Errorf("could not send message, channel '%s' not found", channelID)
+		return fmt.Errorf("could not send message, channel '%s' not found", channelName)
 	}
 
 	p := &model.Post{Message: text, ChannelId: room.Id}
 
 	a.logger.Info("Sending message to channel",
-		zap.String("channelID", channelID),
+		zap.String("channelName", channelName),
 		// do not leak actual message content since it might be sensitive
 	)
 	_, resp := a.api.CreatePost(p)

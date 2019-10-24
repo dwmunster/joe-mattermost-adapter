@@ -38,6 +38,11 @@ var dummyDM = model.Channel{
 	Type: model.CHANNEL_DIRECT,
 }
 
+var dummyTeam = model.Team{
+	Id:   "789",
+	Name: "Awesome Team",
+}
+
 // compile time test to check if we are implementing the interface.
 var _ joe.Adapter = new(BotAdapter)
 
@@ -52,10 +57,12 @@ func newTestAdapter(t *testing.T) (*BotAdapter, *mockMM) {
 		Password: "123",
 		Name:     "Test Name",
 		Logger:   logger,
+		Team:     dummyTeam.Name,
 	}
 
 	loginResp := botUser
 	client.On("Login", conf.LoginID, conf.Password).Return(loginResp, nil)
+	client.On("GetTeamByName", dummyTeam.Name, "").Return(&dummyTeam, nil)
 	u, _ := url.Parse("https://nowhere")
 	conf.ServerURL = u
 
@@ -137,7 +144,7 @@ func TestAdapter_DirectMessages(t *testing.T) {
 
 	events := brain.RecordedEvents()
 	require.NotEmpty(t, events)
-	expectedEvt := joe.ReceiveMessageEvent{Text: "Hello", Channel: dummyDM.Id, Data: &p, AuthorID: dummyUser.Id, ID: "0"}
+	expectedEvt := joe.ReceiveMessageEvent{Text: "Hello", Channel: dummyDM.Name, Data: &p, AuthorID: dummyUser.Id, ID: "0"}
 	assert.Equal(t, expectedEvt, events[0])
 }
 
@@ -176,7 +183,7 @@ func TestAdapter_MentionBot(t *testing.T) {
 
 	events := brain.RecordedEvents()
 	require.NotEmpty(t, events)
-	expectedEvt := joe.ReceiveMessageEvent{Text: p.Message, Channel: dummyRoom.Id, AuthorID: dummyUser.Id, Data: &p, ID: "0"}
+	expectedEvt := joe.ReceiveMessageEvent{Text: p.Message, Channel: dummyRoom.Name, AuthorID: dummyUser.Id, Data: &p, ID: "0"}
 	assert.Equal(t, expectedEvt, events[0])
 }
 
@@ -215,20 +222,21 @@ func TestAdapter_MentionBotPrefix(t *testing.T) {
 
 	events := brain.RecordedEvents()
 	require.NotEmpty(t, events)
-	expectedEvt := joe.ReceiveMessageEvent{Text: "do stuff", Data: &p, AuthorID: dummyUser.Id, Channel: dummyRoom.Id, ID: "0"}
+	expectedEvt := joe.ReceiveMessageEvent{Text: "do stuff", Data: &p, AuthorID: dummyUser.Id, Channel: dummyRoom.Name, ID: "0"}
 	assert.Equal(t, expectedEvt, events[0])
 }
 
 func TestAdapter_Send(t *testing.T) {
 	a, api := newTestAdapter(t)
-	api.On("GetChannel", dummyRoom.Id, "").Return(&dummyRoom, nil)
+	api.On("GetChannelByName", dummyRoom.Name, dummyTeam.Id, "").Return(&dummyRoom, nil)
+
 	p := &model.Post{
 		ChannelId: dummyRoom.Id,
 		Message:   "Hello World",
 	}
 	api.On("CreatePost", p).Return(&model.Post{}, nil)
 
-	err := a.Send("Hello World", dummyRoom.Id)
+	err := a.Send("Hello World", dummyRoom.Name)
 	require.NoError(t, err)
 	api.AssertExpectations(t)
 }
@@ -283,8 +291,8 @@ func (m *mockMM) Close() error {
 	return args.Error(0)
 }
 
-func (m *mockMM) GetChannel(channelId, etag string) (ch *model.Channel, resp *model.Response) {
-	args := m.Called(channelId, etag)
+func (m *mockMM) GetChannelByName(channelName, teamID, etag string) (ch *model.Channel, resp *model.Response) {
+	args := m.Called(channelName, teamID, etag)
 	if x := args.Get(0); x != nil {
 		ch = x.(*model.Channel)
 	}
@@ -292,4 +300,26 @@ func (m *mockMM) GetChannel(channelId, etag string) (ch *model.Channel, resp *mo
 		resp = x.(*model.Response)
 	}
 	return ch, resp
+}
+
+func (m *mockMM) GetChannel(id, etag string) (ch *model.Channel, resp *model.Response) {
+	args := m.Called(id, etag)
+	if x := args.Get(0); x != nil {
+		ch = x.(*model.Channel)
+	}
+	if x := args.Get(1); x != nil {
+		resp = x.(*model.Response)
+	}
+	return ch, resp
+}
+
+func (m *mockMM) GetTeamByName(name, etag string) (t *model.Team, resp *model.Response) {
+	args := m.Called(name, etag)
+	if x := args.Get(0); x != nil {
+		t = x.(*model.Team)
+	}
+	if x := args.Get(1); x != nil {
+		resp = x.(*model.Response)
+	}
+	return t, resp
 }
