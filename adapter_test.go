@@ -6,6 +6,8 @@ import (
 	"net/url"
 	"testing"
 
+	"github.com/go-joe/joe/reactions"
+
 	"github.com/go-joe/joe/joetest"
 	"github.com/stretchr/testify/assert"
 
@@ -248,6 +250,17 @@ func TestAdapter_Close(t *testing.T) {
 	api.AssertExpectations(t)
 }
 
+func TestAdapter_React(t *testing.T) {
+	a, api := newTestAdapter(t)
+	r := &model.Reaction{PostId: "123", EmojiName: "+1"}
+	api.On("SaveReaction", r).Return(r, &model.Response{})
+
+	msg := joe.Message{ID: "123"}
+	err := a.React(reactions.PlusOne, msg)
+	require.NoError(t, err)
+	api.AssertExpectations(t)
+}
+
 type mockMM struct {
 	mock.Mock
 	evts chan *model.WebSocketEvent
@@ -320,4 +333,15 @@ func (m *mockMM) GetTeamByName(name, etag string) (t *model.Team, resp *model.Re
 		resp = x.(*model.Response)
 	}
 	return t, resp
+}
+
+func (m *mockMM) SaveReaction(reaction *model.Reaction) (r *model.Reaction, resp *model.Response) {
+	args := m.Called(reaction)
+	if x := args.Get(0); x != nil {
+		r = x.(*model.Reaction)
+	}
+	if x := args.Get(1); x != nil {
+		resp = x.(*model.Response)
+	}
+	return r, resp
 }

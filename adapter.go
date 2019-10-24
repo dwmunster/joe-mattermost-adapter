@@ -8,6 +8,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/go-joe/joe/reactions"
+
 	"github.com/pkg/errors"
 
 	"go.uber.org/zap"
@@ -45,7 +47,7 @@ type Config struct {
 
 type mattermostAPI interface {
 	CreatePost(post *model.Post) (*model.Post, *model.Response)
-	//SaveReaction(reaction *model.Reaction) (*model.Reaction, *model.Response)
+	SaveReaction(reaction *model.Reaction) (*model.Reaction, *model.Response)
 	GetMe(etag string) (*model.User, *model.Response)
 	EventStream() chan *model.WebSocketEvent
 	GetChannelByName(channelName, teamId string, etag string) (*model.Channel, *model.Response)
@@ -316,11 +318,14 @@ func (a *BotAdapter) userLink(username string) string {
 //	}
 //}
 //
-//func (a *BotAdapter) React(r reactions.Reaction, msg joe.Message) error {
-//	m := &models.Message{ID: msg.ID}
-//	err := a.rocket.ReactToMessage(m, ":"+r.Shortcode+":")
-//	if err != nil {
-//		return errors.Wrapf(err, "Error reacting to message: msg: %s, reaction: %s", msg.ID, r.Shortcode)
-//	}
-//	return nil
-//}
+func (a *BotAdapter) React(r reactions.Reaction, msg joe.Message) error {
+	react := &model.Reaction{
+		PostId:    msg.ID,
+		EmojiName: r.Shortcode,
+	}
+	_, resp := a.api.SaveReaction(react)
+	if resp.Error != nil {
+		return errors.Wrapf(resp.Error, "Error reacting to message: msg: %s, reaction: %s", msg.ID, r.Shortcode)
+	}
+	return nil
+}
