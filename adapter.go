@@ -322,6 +322,7 @@ func (a *BotAdapter) React(r reactions.Reaction, msg joe.Message) error {
 	react := &model.Reaction{
 		PostId:    msg.ID,
 		EmojiName: r.Shortcode,
+		UserId:    a.user.Id,
 	}
 	_, resp := a.api.SaveReaction(react)
 	if resp.Error != nil {

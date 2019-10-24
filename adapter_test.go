@@ -252,7 +252,7 @@ func TestAdapter_Close(t *testing.T) {
 
 func TestAdapter_React(t *testing.T) {
 	a, api := newTestAdapter(t)
-	r := &model.Reaction{PostId: "123", EmojiName: "+1"}
+	r := &model.Reaction{PostId: "123", EmojiName: "+1", UserId: botUser.Id}
 	api.On("SaveReaction", r).Return(r, &model.Response{})
 
 	msg := joe.Message{ID: "123"}
