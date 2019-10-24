@@ -117,7 +117,7 @@ func NewAdapter(ctx context.Context, conf Config) (*BotAdapter, error) {
 
 func newAdapter(ctx context.Context, client mattermostAPI, conf Config) (*BotAdapter, error) {
 	user, appErr := client.GetMe("")
-	if appErr.Error != nil {
+	if appErr != nil && appErr.Error != nil {
 		return nil, errors.Wrapf(appErr.Error, "error getting self")
 	}
 

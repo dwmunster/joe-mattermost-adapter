@@ -1,6 +1,8 @@
 package mattermost
 
 import (
+	"net/url"
+
 	"github.com/mattermost/mattermost-server/model"
 )
 
@@ -8,6 +10,10 @@ type mmClient struct {
 	*model.Client4
 	wsClient  *model.WebSocketClient
 	listening bool
+}
+
+func (c *mmClient) GetTeamByName(name, etag string) (*model.Team, *model.Response) {
+	return c.Client4.GetTeamByName(url.PathEscape(name), etag)
 }
 
 func (c *mmClient) EventStream() chan *model.WebSocketEvent {
