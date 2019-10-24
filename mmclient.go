@@ -1,8 +1,6 @@
 package mattermost
 
 import (
-	"net/url"
-
 	"github.com/mattermost/mattermost-server/model"
 )
 
@@ -21,22 +19,6 @@ func (c *mmClient) EventStream() chan *model.WebSocketEvent {
 		c.listening = true
 	}
 	return c.wsClient.EventChannel
-}
-
-func (c *mmClient) Login(loginID string, password string) (*model.User, *model.Response) {
-	user, resp := c.Client4.Login(loginID, password)
-	wsURL, err := url.Parse(c.Url)
-	if err != nil {
-		return nil, nil
-	}
-	wsURL.Scheme = "wss"
-	wsClient, appErr := model.NewWebSocketClient4(wsURL.String(), c.AuthToken)
-	if appErr != nil {
-		return nil, model.BuildErrorResponse(nil, appErr)
-	}
-	c.wsClient = wsClient
-
-	return user, resp
 }
 
 func (c *mmClient) Close() error {

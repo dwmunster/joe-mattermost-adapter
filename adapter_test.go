@@ -53,15 +53,13 @@ func newTestAdapter(t *testing.T) (*BotAdapter, *mockMM) {
 	client.evts = make(chan *model.WebSocketEvent)
 
 	conf := Config{
-		LoginID:  "test@email.com",
-		Password: "123",
-		Name:     "Test Name",
-		Logger:   logger,
-		Team:     dummyTeam.Name,
+		Token:  "fake",
+		Name:   "Test Name",
+		Logger: logger,
+		Team:   dummyTeam.Name,
 	}
 
-	loginResp := botUser
-	client.On("Login", conf.LoginID, conf.Password).Return(loginResp, nil)
+	client.On("GetMe", "").Return(botUser, nil)
 	client.On("GetTeamByName", dummyTeam.Name, "").Return(&dummyTeam, nil)
 	u, _ := url.Parse("https://nowhere")
 	conf.ServerURL = u
@@ -270,15 +268,15 @@ func (m *mockMM) CreatePost(p *model.Post) (post *model.Post, resp *model.Respon
 	return post, resp
 }
 
-func (m *mockMM) Login(loginId string, password string) (usr *model.User, resp *model.Response) {
-	args := m.Called(loginId, password)
+func (m *mockMM) GetMe(etag string) (user *model.User, resp *model.Response) {
+	args := m.Called(etag)
 	if x := args.Get(0); x != nil {
-		usr = x.(*model.User)
+		user = x.(*model.User)
 	}
 	if x := args.Get(1); x != nil {
 		resp = x.(*model.Response)
 	}
-	return usr, resp
+	return user, resp
 }
 
 func (m *mockMM) EventStream() chan *model.WebSocketEvent {

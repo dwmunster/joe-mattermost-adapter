@@ -18,7 +18,7 @@ func joeConf(t *testing.T) *joe.Config {
 }
 
 func TestDefaultConfig(t *testing.T) {
-	conf, err := newConf("fake@email", "password", "url", "teamname", joeConf(t), []Option{})
+	conf, err := newConf("fakeT0k3n", "url", "teamname", joeConf(t), []Option{})
 	require.NoError(t, err)
 	assert.NotNil(t, conf.Logger)
 	assert.Equal(t, "testname", conf.Name)
@@ -26,7 +26,7 @@ func TestDefaultConfig(t *testing.T) {
 
 func TestWithLogger(t *testing.T) {
 	logger := zaptest.NewLogger(t)
-	conf, err := newConf("fake@email", "password", "url", "teamname", joeConf(t), []Option{
+	conf, err := newConf("fakeT0k3n", "url", "teamname", joeConf(t), []Option{
 		WithLogger(logger),
 	})
 

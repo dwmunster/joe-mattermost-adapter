@@ -36,8 +36,7 @@ type BotAdapter struct {
 
 // Config contains the configuration of a BotAdapter.
 type Config struct {
-	LoginID   string
-	Password  string
+	Token     string
 	Team      string
 	ServerURL *url.URL
 	Name      string
@@ -47,7 +46,7 @@ type Config struct {
 type mattermostAPI interface {
 	CreatePost(post *model.Post) (*model.Post, *model.Response)
 	//SaveReaction(reaction *model.Reaction) (*model.Reaction, *model.Response)
-	Login(loginId string, password string) (*model.User, *model.Response)
+	GetMe(etag string) (*model.User, *model.Response)
 	EventStream() chan *model.WebSocketEvent
 	GetChannelByName(channelName, teamId string, etag string) (*model.Channel, *model.Response)
 	GetChannel(channelId, etag string) (*model.Channel, *model.Response)
@@ -56,9 +55,9 @@ type mattermostAPI interface {
 }
 
 //Adapter returns a new mattermost Adapter as joe.Module.
-func Adapter(loginID, password, serverURL, teamName string, opts ...Option) joe.Module {
+func Adapter(token, serverURL, teamName string, opts ...Option) joe.Module {
 	return joe.ModuleFunc(func(joeConf *joe.Config) error {
-		conf, err := newConf(loginID, password, serverURL, teamName, joeConf, opts)
+		conf, err := newConf(token, serverURL, teamName, joeConf, opts)
 		if err != nil {
 			return err
 		}
@@ -73,12 +72,12 @@ func Adapter(loginID, password, serverURL, teamName string, opts ...Option) joe.
 	})
 }
 
-func newConf(loginID, password, serverURL, teamName string, joeConf *joe.Config, opts []Option) (Config, error) {
+func newConf(token, serverURL, teamName string, joeConf *joe.Config, opts []Option) (Config, error) {
 	u, err := url.Parse(serverURL)
 	if err != nil {
 		return Config{}, err
 	}
-	conf := Config{LoginID: loginID, Password: password, ServerURL: u, Name: joeConf.Name, Team: teamName}
+	conf := Config{Token: token, ServerURL: u, Name: joeConf.Name, Team: teamName}
 
 	for _, opt := range opts {
 		err := opt(&conf)
@@ -98,19 +97,28 @@ func newConf(loginID, password, serverURL, teamName string, joeConf *joe.Config,
 // will usually configure the mattermost adapter as joe.Module (i.e. using the
 // Adapter function of this package).
 func NewAdapter(ctx context.Context, conf Config) (*BotAdapter, error) {
+	uri := conf.ServerURL.String()
+	wsURL, _ := url.Parse(uri)
+	wsURL.Scheme = "wss"
+
+	wsClient, err := model.NewWebSocketClient4(wsURL.String(), conf.Token)
+	if err != nil {
+		return nil, err
+	}
 
 	client := &mmClient{
 		Client4:  model.NewAPIv4Client(conf.ServerURL.String()),
-		wsClient: nil,
+		wsClient: wsClient,
 	}
+	client.SetToken(conf.Token)
 
 	return newAdapter(ctx, client, conf)
 }
 
 func newAdapter(ctx context.Context, client mattermostAPI, conf Config) (*BotAdapter, error) {
-	user, appErr := client.Login(conf.LoginID, conf.Password)
+	user, appErr := client.GetMe("")
 	if appErr != nil {
-		return nil, errors.Wrapf(appErr.Error, "error logging in, requestID: %s", appErr.RequestId)
+		return nil, errors.Wrapf(appErr.Error, "error getting self")
 	}
 
 	a := &BotAdapter{
