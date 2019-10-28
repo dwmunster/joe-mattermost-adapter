@@ -40,11 +40,11 @@ import (
 
 func main() {
 	b := joe.New("example-bot",
-		mattermost.Adapter(
-			os.Getenv("MM_EMAIL"),
-			os.Getenv("MM_PASSWORD"),
-			os.Getenv("MM_URL"),
-		),
+        mattermost.Adapter(
+            os.Getenv("MATTERMOST_TOKEN"),
+            os.Getenv("MATTERMOST_URL"),
+            os.Getenv("MATTERMOST_TEAM"),
+        ),
 	)
 	b.Respond("ping", Pong)
 
