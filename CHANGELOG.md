@@ -14,6 +14,6 @@ Initial reaction support. Capable of adding reactions to messages.
 Initial alpha release
 
 
-[Unreleased]: https://github.com/dwmunster/go-joe-mattermost/compare/v0.2.0...HEAD
-[v0.2.0]: https://github.com/dwmunster/go-joe-mattermost/releases/tag/v0.2.0
-[v0.1.2]: https://github.com/dwmunster/go-joe-mattermost/releases/tag/v0.1.2
+[Unreleased]: https://github.com/dwmunster/joe-mattermost-adapter/compare/v0.2.0...HEAD
+[v0.2.0]: https://github.com/dwmunster/joe-mattermost-adapter/releases/tag/v0.2.0
+[v0.1.2]: https://github.com/dwmunster/joe-mattermost-adapter/releases/tag/v0.1.2

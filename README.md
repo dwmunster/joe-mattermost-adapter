@@ -1,12 +1,12 @@
 <h1 align="center">Joe Bot - Mattermost Adapter</h1>
 <p align="center">Connecting joe with the Mattermost chat application. https://github.com/go-joe/joe</p>
 <p align="center">
-	<a href="https://github.com/dwmunster/go-joe-mattermost/releases"><img src="https://img.shields.io/github/tag/dwmunster/go-joe-mattermost.svg?label=version&color=brightgreen"></a>
-	<a href="https://circleci.com/gh/dwmunster/go-joe-mattermost/tree/master"><img src="https://circleci.com/gh/dwmunster/go-joe-mattermost/tree/master.svg?style=shield"></a>
-	<a href="https://goreportcard.com/report/github.com/dwmunster/go-joe-mattermost"><img src="https://goreportcard.com/badge/github.com/dwmunster/go-joe-mattermost"></a>
-	<a href="https://codecov.io/gh/dwmunster/go-joe-mattermost"><img src="https://codecov.io/gh/dwmunster/go-joe-mattermost/branch/master/graph/badge.svg"/></a>
-	<a href="https://godoc.org/github.com/dwmunster/go-joe-mattermost"><img src="https://img.shields.io/badge/godoc-reference-blue.svg?color=blue"></a>
-	<a href="https://github.com/dwmunster/go-joe-mattermost/blob/master/LICENSE"><img src="https://img.shields.io/badge/license-BSD--3--Clause-blue.svg"></a>
+	<a href="https://github.com/dwmunster/joe-mattermost-adapter/releases"><img src="https://img.shields.io/github/tag/dwmunster/joe-mattermost-adapter.svg?label=version&color=brightgreen"></a>
+	<a href="https://circleci.com/gh/dwmunster/joe-mattermost-adapter/tree/master"><img src="https://circleci.com/gh/dwmunster/joe-mattermost-adapter/tree/master.svg?style=shield"></a>
+	<a href="https://goreportcard.com/report/github.com/dwmunster/joe-mattermost-adapter"><img src="https://goreportcard.com/badge/github.com/dwmunster/joe-mattermost-adapter"></a>
+	<a href="https://codecov.io/gh/dwmunster/joe-mattermost-adapter"><img src="https://codecov.io/gh/dwmunster/joe-mattermost-adapter/branch/master/graph/badge.svg"/></a>
+	<a href="https://godoc.org/github.com/dwmunster/joe-mattermost-adapter"><img src="https://img.shields.io/badge/godoc-reference-blue.svg?color=blue"></a>
+	<a href="https://github.com/dwmunster/joe-mattermost-adapter/blob/master/LICENSE"><img src="https://img.shields.io/badge/license-BSD--3--Clause-blue.svg"></a>
 </p>
 
 ---
@@ -20,7 +20,7 @@ This repository contains a module for the [Joe Bot library][joe].
 This library is packaged using the new [Go modules][go-modules]. You can get it via:
 
 ```
-go get github.com/dwmunster/go-joe-mattermost
+go get github.com/dwmunster/joe-mattermost-adapter
 ```
 
 ### Example usage
@@ -34,7 +34,7 @@ package main
 import (
 	"os"
 
-	"github.com/dwmunster/go-joe-mattermost"
+	"github.com/dwmunster/joe-mattermost-adapter"
 	"github.com/go-joe/joe"
 )
 
@@ -94,5 +94,5 @@ This project is licensed under the BSD-3-Clause License - see the [LICENSE](LICE
 
 [joe]: https://github.com/go-joe/joe
 [go-modules]: https://github.com/golang/go/wiki/Modules
-[tags]: https://github.com/dwmunster/go-joe-mattermost/tags
-[contributors]: https://github.com/github.com/dwmunster/go-joe-mattermost/contributors
+[tags]: https://github.com/dwmunster/joe-mattermost-adapter/tags
+[contributors]: https://github.com/github.com/dwmunster/joe-mattermost-adapter/contributors

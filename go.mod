@@ -1,4 +1,4 @@
-module github.com/dwmunster/go-joe-mattermost
+module github.com/dwmunster/joe-mattermost-adapter
 
 go 1.13
 
